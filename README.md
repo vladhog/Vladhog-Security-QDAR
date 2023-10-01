@@ -9,6 +9,9 @@ When someone request site that is in our database, dns resolver redirect request
 First of all, before installation disable your antivirus. Some antiviruses dont like startup file because startup.exe is archive that extract itself to temp folder and then execute startup.exe inside that temp folder.
 Then, start startup.exe and add C:\Program Files (x86)\Vladhog Security QDAR folder to antivirus exceptions, because startup.exe will be used later for auto start antivirus on windows start and for updating it on every start.
 
+# Customisation
+You can customise your block page by editing blocked.html
+
 # Contect us
 security@vladhog.ru
 
