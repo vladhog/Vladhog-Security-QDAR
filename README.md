@@ -12,6 +12,10 @@ Then, start startup.exe and add C:\Program Files (x86)\Vladhog Security QDAR fol
 # Customisation
 You can customise your block page by editing blocked.html
 
+# Terms of usage
+Two simple rules: protection free for everyone and non-commercial usage only.
+General terms for all Vladhog Security Services are here: https://vladhog.ru/promo/securitybot/tos
+
 # Contect us
 security@vladhog.ru
 
