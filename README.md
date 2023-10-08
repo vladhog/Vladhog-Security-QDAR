@@ -16,6 +16,9 @@ You can customise your block page by editing blocked.html
 Two simple rules: protection free for everyone and non-commercial usage only.
 General terms for all Vladhog Security Services are here: https://vladhog.ru/promo/securitybot/tos
 
+# License
+Vladhog Security Quick DNS Antivirus Responder © 2023 by Vladhog Security is licensed under Attribution-NonCommercial-ShareAlike 4.0 International 
+
 # Contect us
 security@vladhog.ru
 
