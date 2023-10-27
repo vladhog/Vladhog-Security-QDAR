@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from textwrap import wrap
 from typing import Any, List
+import threading
 
 from dnslib import QTYPE, RR, DNSLabel, dns
 from dnslib.proxy import ProxyResolver as LibProxyResolver
@@ -187,26 +188,33 @@ class DNSServer:
 
     def start(self):
         if self.upstream:
-            logger.info('starting DNS server on port %d, upstream DNS server "%s"', self.port, self.upstream)
+            logger.info('starting DNS on port: %d, upstream DNS server "%s"', self.port, self.upstream)
             resolver = ProxyResolver(self.records, self.upstream)
         else:
-            logger.info('starting DNS server on port %d, without upstream DNS server', self.port)
+            logger.info('starting DNS on port: %d, without upstream DNS server', self.port)
             resolver = BaseResolver(self.records)
 
         self.udp_server = LibDNSServer(resolver, port=self.port)
+        udp_thread = threading.Thread(target=self.udp_server.start)
+        udp_thread.start()
+
         self.tcp_server = LibDNSServer(resolver, port=self.port, tcp=True)
-        self.udp_server.start_thread()
-        self.tcp_server.start_thread()
+        tcp_thread = threading.Thread(target=self.tcp_server.start)
+        tcp_thread.start()
 
     def stop(self):
-        self.udp_server.stop()
-        self.udp_server.server.server_close()
-        self.tcp_server.stop()
-        self.tcp_server.server.server_close()
+        if self.udp_server:
+            self.udp_server.stop()
+            self.udp_server.server.server_close()
+        if self.tcp_server:
+            self.tcp_server.stop()
+            self.tcp_server.server.server_close()
 
     @property
     def is_running(self):
-        return (self.udp_server and self.udp_server.isAlive()) or (self.tcp_server and self.tcp_server.isAlive())
+        udp_alive = self.udp_server and self.udp_server.isAlive()
+        tcp_alive = self.tcp_server and self.tcp_server.isAlive()
+        return udp_alive or tcp_alive
 
     def add_record(self, zone: Zone):
         self.records.zones.append(zone)
