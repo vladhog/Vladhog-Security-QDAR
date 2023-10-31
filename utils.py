@@ -2,32 +2,26 @@ import ctypes
 import json
 import logging
 import traceback
-import winreg
-
-import psutil
-from win32com.client import Dispatch
-
-import netifaces
-
 import socket
-
+import psutil
+import winreg
+from win32com.client import Dispatch
+import netifaces
 from vladhog_filetype import VDF
 
+# Get local IP
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
 local_ip = s.getsockname()[0]
 s.close()
 
-interface = None
-
-logging.basicConfig(filename="log.log",
-                    filemode='a',
+logging.basicConfig(filename="log.log", filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger("Vladhog_Security_QDAR")
 logger.setLevel(logging.INFO)
 
-def create_shortcut(file_name: str, target: str, work_dir: str, arguments: str = ''):
+def create_shortcut(file_name, target, work_dir, arguments=''):
     shell = Dispatch('WScript.Shell')
     shortcut = shell.CreateShortCut(file_name)
     shortcut.TargetPath = target
@@ -36,49 +30,30 @@ def create_shortcut(file_name: str, target: str, work_dir: str, arguments: str =
     shortcut.save()
 
 def get_engine_status():
-    if "qdar.exe" in (p.name() for p in psutil.process_iter()):
-        return True
-    else:
-        return False
+    return any(p.name() == "qdar.exe" for p in psutil.process_iter())
 
 def change_protection_state(state):
     global interface
-    if state:
-        for i in netifaces.interfaces():
-            try:
+    for i in netifaces.interfaces():
+        try:
+            if netifaces.ifaddresses(i).get(netifaces.AF_INET):
                 if netifaces.ifaddresses(i)[netifaces.AF_INET][0]['addr'] == local_ip:
                     interface = i
                     break
-            except Exception:
-                pass
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                             F"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\\{interface}", 0,
-                             winreg.KEY_ALL_ACCESS)
-        winreg.SetValueEx(key, 'NameServer', None, winreg.REG_SZ, "127.0.0.1,1.1.1.1")
-        winreg.CloseKey(key)
-        logger.info(f"Changed interface {interface} dns server to QDAR dns")
-    else:
-        for i in netifaces.interfaces():
-            try:
-                if netifaces.ifaddresses(i)[netifaces.AF_INET][0]['addr'] == local_ip:
-                    interface = i
-                    break
-            except Exception:
-                pass
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                             F"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\\{interface}", 0,
-                             winreg.KEY_ALL_ACCESS)
-        winreg.SetValueEx(key, 'NameServer', None, winreg.REG_SZ, "")
-        winreg.CloseKey(key)
-        logger.info(f"Changed interface {interface} dns server to default dns")
-
+        except Exception:
+            pass
+    key_path = F"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces\\{interface}"
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_ALL_ACCESS) as key:
+        new_dns = "127.0.0.1,1.1.1.1" if state else ""
+        winreg.SetValueEx(key, 'NameServer', None, winreg.REG_SZ, new_dns)
+    logger.info(f"Changed interface {interface} dns server to QDAR dns" if state else f"Changed interface {interface} dns server to default dns")
 
 def get_settings(name):
     try:
         with open("settings.vdf", "rb") as file:
             data = VDF.decrypt(file.read()).decode()
             data = json.loads(data)
-            return data[name]
+            return data.get(name)
     except Exception:
         logger.error(traceback.format_exc())
 
@@ -100,4 +75,3 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     except Exception:
         return False
-
