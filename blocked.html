@@ -2,9 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>This domain was blocked by Vladhog Security</title>
+    <title>This website has been blocked by Vladhog Security</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+            color: red;
+        }
+        p {
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
-    <h1 align="center">This domain is malicious</h1>
+    <h1 id="blocked-message">This website has been blocked by Vladhog Security</h1>
+
+    <p id="datetime">Current Date and Time: </p>
+
+    <script>
+        const userLanguage = window.navigator.userLanguage || window.navigator.language;
+        const supportedLanguages = ["en", "es", "fr", "ru", "it", "ar"];
+
+        function updateContent(language) {
+            const messages = {
+                "en": "This website has been blocked by Vladhog Security",
+                "es": "Este sitio web ha sido bloqueado por Vladhog Security",
+                "fr": "Ce site web a été bloqué par Vladhog Security",
+                "ru": "Этот сайт заблокирован Vladhog Security",
+                "it": "Questo sito web è stato bloccato da Vladhog Security",
+                "ar": "تم حظر هذا الموقع بواسطة فريق Vladhog Security"
+            };
+
+            const blockedMessage = document.getElementById("blocked-message");
+            const datetime = document.getElementById("datetime");
+            if (messages[language]) {
+                blockedMessage.textContent = messages[language];
+            } else {
+                blockedMessage.textContent = messages["en"];
+            }
+
+            const now = new Date();
+            const datetimeString = now.toLocaleString(language);
+            datetime.textContent = `Current Date and Time: ${datetimeString}`;
+        }
+        if (supportedLanguages.includes(userLanguage)) {
+            updateContent(userLanguage);
+        } else {
+            updateContent("en");
+        }
+    </script>
 </body>
 </html>
