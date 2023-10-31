@@ -1,24 +1,20 @@
 # Vladhog Security QDAR
-Vladhog Security Quick DNS Antivirus Responder - simple antivirus from Vladhog Security team that filter domains with our database
+Vladhog Security Quick DNS Antivirus Responder is a simple antivirus created by the Vladhog Security team. It filters domains using our database.
 
-# How it works
-Antivirus replace computer dns provider with 2 manual: one work on 127.0.0.1 (local host) where QDAR host our own dns server and 1.1.1.1 (cloudflare) dns for situations where main dns dont work for some reason.
-When someone request site that is in our database, dns resolver redirect requests to 127.0.0.1 where antivirus also host website with page that shows that site is blocked.
+## How It Works
+The antivirus replaces your computer's DNS provider with two options: one that operates on 127.0.0.1 (the local host), where QDAR hosts its DNS server, and another using 1.1.1.1 (Cloudflare's DNS) for situations where the main DNS doesn't function for any reason. When someone requests a site that is in our database, the DNS resolver redirects the requests to 127.0.0.1, where the antivirus also hosts a webpage indicating that the site is blocked.
 
-# Install
-First of all, before installation disable your antivirus. Some antiviruses dont like startup file because startup.exe is archive that extract itself to temp folder and then execute startup.exe inside that temp folder.
-Then, start startup.exe and add C:\Program Files (x86)\Vladhog Security QDAR folder to antivirus exceptions, because startup.exe will be used later for auto start antivirus on windows start and for updating it on every start.
+## Installation
+Before installation, disable your antivirus software. Some antivirus programs may block the startup file because "startup.exe" is an archive that extracts itself to a temporary folder and then executes "startup.exe" from within that folder. Afterward, run "startup.exe" and add the "C:\Program Files (x86)\Vladhog Security QDAR" folder to your antivirus exceptions. This is necessary because "startup.exe" will be used later to automatically start the antivirus when Windows boots and for updating it with each start.
 
-# Customisation
-You can customise your block page by editing blocked.html
+## Customization
+You can customize your block page by editing the "blocked.html" file.
 
-# Terms of usage
-Two simple rules: protection free for everyone and non-commercial usage only.
-General terms for all Vladhog Security Services are here: https://vladhog.ru/promo/securitybot/tos
+## Terms of Usage
+There are two simple rules: this protection is free for everyone, and it's for non-commercial use only. You can find the general terms for all Vladhog Security services [here](https://vladhog.ru/promo/securitybot/tos).
 
-# License
-Vladhog Security Quick DNS Antivirus Responder © 2023 by Vladhog Security is licensed under Attribution-NonCommercial-ShareAlike 4.0 International 
+## License
+Vladhog Security Quick DNS Antivirus Responder © 2023 by Vladhog Security is licensed under Attribution-NonCommercial-ShareAlike 4.0 International.
 
-# Contect us
-security@vladhog.ru
-
+## Contact Us
+Email: security@vladhog.ru
