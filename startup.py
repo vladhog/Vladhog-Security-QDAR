@@ -1,47 +1,67 @@
+
 import os
-import pathlib
 import random
+import time
 import traceback
 import argparse
 import shutil
+import pathlib
 
-from winreg import OpenKey, HKEY_CURRENT_USER, KEY_WOW64_64KEY, KEY_READ, EnumValue
-import psutil
-import requests
-import zipfile
-from pathlib import Path
-from vladhog_filetype import VDF
-import json
-import ctypes
-import sys
+try:
+    from winreg import OpenKey, HKEY_CURRENT_USER, KEY_WOW64_64KEY, KEY_READ, EnumValue
+    from urllib3.util import connection
+    from dns import message, query
+    import psutil
+    import requests
+    import zipfile
+    from pathlib import Path
+    from vladhog_filetype import VDF
+    import json
+    import ctypes
+    import sys
 
-from utils import logger, create_shortcut, is_admin, change_protection_state
+    from utils import logger, create_shortcut, is_admin, change_protection_state
+except Exception:
+    print(traceback.format_exc())
 
 dir_path = "C:\\Program Files (x86)\\Vladhog Security QDAR\\"
 
 PROCESS_QUERY_INFORMATION = 0x0400
 PROCESS_TERMINATE = 1
 
-desktop = os.path.join(os.path.join(os.path.expanduser('~')), '')
+# Searching for correct desktop directory, fixing problem with desktop in OneDrive
+key = OpenKey(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", 0,
+                     KEY_WOW64_64KEY | KEY_READ)
+i = 0
+while True:
+    try:
+        a = EnumValue(key, i)
+        if a[0] == "Desktop":
+            b = pathlib.Path(a[1])
+            c = pathlib.Path(*b.parts[1:])
+        i += 1
+    except OSError:
+        break
+desktop = os.path.join(os.path.join(os.path.expanduser('~')), c)
 
 if is_admin():
     try:
+        print("Running with administrative privileges")
+
         parser = argparse.ArgumentParser('Vladhog Security QDAR')
         parser.add_argument('--update', action='store_true')
         args = parser.parse_args()
-
-        # Create QDAR directory if not in the correct directory
-        if os.getcwd() != dir_path:
-            Path(dir_path).mkdir(parents=True, exist_ok=True)
+        if os.getcwd() != "C:\\Program Files (x86)\\Vladhog Security QDAR":
+            Path(f"C:/Program Files (x86)/Vladhog Security QDAR/").mkdir(parents=True, exist_ok=True)
             try:
-                shutil.copy(os.path.join(os.getcwd(), "startup.exe"), dir_path)
+                shutil.copy(os.getcwd() + "\\startup.exe", "C:\\Program Files (x86)\\Vladhog Security QDAR")
             except Exception:
                 pass
-            os.chdir(dir_path)
+            os.chdir("C:\\Program Files (x86)\\Vladhog Security QDAR")
             if args.update:
-                ctypes.windll.shell32.ShellExecuteW(None, "runas", "startup.exe", "--update", None, 1)
+                ctypes.windll.shell32.ShellExecuteW(None, "runas", dir_path + "startup.exe", "--update", None, 1)
             else:
-                ctypes.windll.shell32.ShellExecuteW(None, "runas", "startup.exe", "", None, 1)
+                ctypes.windll.shell32.ShellExecuteW(None, "runas", dir_path + "startup.exe", "", None, 1)
             sys.exit()
 
         # Create QDAR directory
@@ -139,6 +159,9 @@ if is_admin():
                 logger.error(traceback.format_exc())
     except Exception:
         print(traceback.format_exc())
+        time.sleep(30)
+        logger.error(traceback.format_exc())
 else:
     # Re-run the program with admin rights
+    logger.info("Program started without admin rights, restarting as admin")
     ctypes.windll.shell32.ShellExecuteW(None, "runas", os.path.join(os.getcwd(), "startup.exe"), "", None, 1)

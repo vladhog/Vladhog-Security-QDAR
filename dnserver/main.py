@@ -1,5 +1,8 @@
 from __future__ import annotations as _annotations
 
+import re
+import traceback
+
 from .db import link_db
 import asyncio
 import hashlib
@@ -8,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from textwrap import wrap
 from typing import Any, List
-import threading
+import requests
 
 from dnslib import QTYPE, RR, DNSLabel, dns
 from dnslib.proxy import ProxyResolver as LibProxyResolver
@@ -90,24 +93,31 @@ class Record:
     def __str__(self):
         return str(self.rr)
 def resolve(request, handler, records):
-    def md5(url):
-        m = hashlib.md5()
+    def md5(url: str):
+        m = hashlib.sha3_512()
         m.update(url.encode('utf-8'))
         return m.hexdigest()
 
     name = str(request.q.qname)[:len(str(request.q.qname))-1]
-    if name != "vladhog.ru":
-        name_md5 = md5(name)
-        if name_md5 not in list(response_list):
-            res = link_db.find_one({"hash": name_md5})
-            if res is None:
-                res = {"hash": name_md5, "malicious": "0"}
-            response_list[name_md5] = res
-        else:
-            res = response_list[name_md5]
-        #print(res)
-        if res["malicious"] == "1":
-            records.zones.append(Zone(name, "A", "127.0.0.1"))
+    try:
+        if re.match(r'w+\.', name):
+            name = name.replace("www.", "")
+        if name != "vladhog.ru":
+            name_md5 = md5(name)
+            if name_md5 not in list(response_list):
+                res = requests.get(f"https://vladhog.ru/web/api/get;hash={name_md5}", timeout=30, headers={'User-Agent': "QDAR"}).json()
+                if res['response'] == "404":
+                    res = {"hash": name_md5, "malicious": "0"}
+                else:
+                    res = {"hash": name_md5, "malicious": res['malicious']}
+                response_list[name_md5] = res
+            else:
+                res = response_list[name_md5]
+            #print(res)
+            if res["malicious"] == "1":
+                records.zones.append(Zone(name, "A", "127.0.0.1"))
+    except Exception:
+        print(traceback.format_exc())
 
     records = [Record(zone) for zone in records.zones]
     type_name = QTYPE[request.q.qtype]
@@ -188,33 +198,26 @@ class DNSServer:
 
     def start(self):
         if self.upstream:
-            logger.info('starting DNS on port: %d, upstream DNS server "%s"', self.port, self.upstream)
+            logger.info('starting DNS server on port %d, upstream DNS server "%s"', self.port, self.upstream)
             resolver = ProxyResolver(self.records, self.upstream)
         else:
-            logger.info('starting DNS on port: %d, without upstream DNS server', self.port)
+            logger.info('starting DNS server on port %d, without upstream DNS server', self.port)
             resolver = BaseResolver(self.records)
 
         self.udp_server = LibDNSServer(resolver, port=self.port)
-        udp_thread = threading.Thread(target=self.udp_server.start)
-        udp_thread.start()
-
         self.tcp_server = LibDNSServer(resolver, port=self.port, tcp=True)
-        tcp_thread = threading.Thread(target=self.tcp_server.start)
-        tcp_thread.start()
+        self.udp_server.start_thread()
+        self.tcp_server.start_thread()
 
     def stop(self):
-        if self.udp_server:
-            self.udp_server.stop()
-            self.udp_server.server.server_close()
-        if self.tcp_server:
-            self.tcp_server.stop()
-            self.tcp_server.server.server_close()
+        self.udp_server.stop()
+        self.udp_server.server.server_close()
+        self.tcp_server.stop()
+        self.tcp_server.server.server_close()
 
     @property
     def is_running(self):
-        udp_alive = self.udp_server and self.udp_server.isAlive()
-        tcp_alive = self.tcp_server and self.tcp_server.isAlive()
-        return udp_alive or tcp_alive
+        return (self.udp_server and self.udp_server.isAlive()) or (self.tcp_server and self.tcp_server.isAlive())
 
     def add_record(self, zone: Zone):
         self.records.zones.append(zone)

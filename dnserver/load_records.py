@@ -1,9 +1,10 @@
 from __future__ import annotations as _annotations
+
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     from typing import Literal
@@ -23,17 +24,17 @@ class Zone:
     host: str
     type: RecordType
     answer: str | list[str | int]
-    ttl: Optional[int]  # Time-to-Live (TTL) value in seconds
-    other_args: dict  # Other optional arguments
 
     @classmethod
     def from_raw(cls, index: int, data: Any) -> Zone:
         if not isinstance(data, dict) or data.keys() != {'host', 'type', 'answer'}:
-            raise ValueError(f'Zone {index} is not a valid dict, must have keys "host", "type" and "answer", got {data!r}')
+            raise ValueError(
+                f'Zone {index} is not a valid dict, must have keys "host", "type" and "answer", got {data!r}'
+            )
 
         host = data['host']
         if not isinstance(host, str):
-            raise ValueError(f'Zone {index} is invalid, "host" must be a string, got {data!r}')
+            raise ValueError(f'Zone {index} is invalid, "host" must be string, got {data!r}')
 
         type_ = data['type']
         if type_ not in RECORD_TYPES:
@@ -47,10 +48,7 @@ class Zone:
                 f'Zone {index} is invalid, "answer" must be a string or list of strings and ints, got {data!r}'
             )
 
-        ttl = data.get('ttl')  # Optional TTL field
-        other_args = data.get('other_args', {})  # Other optional arguments
-
-        return cls(host, type_, answer, ttl, other_args)
+        return cls(host, type_, answer)
 
 
 @dataclass
